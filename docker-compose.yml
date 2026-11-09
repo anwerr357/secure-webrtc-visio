@@ -1,0 +1,58 @@
+# App (signaling + web client) and coturn (STUN/TURN relay).
+# Both use host networking: TURN must expose a whole range of UDP relay
+# ports, and WebRTC ICE works best without Docker's NAT in the middle.
+services:
+  app:
+    build: .
+    network_mode: host
+    environment:
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      TURN_SECRET: ${TURN_SECRET:?set TURN_SECRET in .env}
+      TURN_URLS: turn:${PUBLIC_IP:?set PUBLIC_IP in .env}:3478?transport=udp,turn:${PUBLIC_IP:?set PUBLIC_IP in .env}:3478?transport=tcp
+      STUN_URLS: stun:${PUBLIC_IP:?set PUBLIC_IP in .env}:3478
+    volumes:
+      - ./certs:/app/certs:ro
+      - users:/app/data
+    restart: unless-stopped
+
+  coturn:
+    image: coturn/coturn:4.6
+    network_mode: host
+    command:
+      - -n                                  # no config file, flags only
+      - --listening-port=3478
+      - --fingerprint
+      - --use-auth-secret                   # TURN REST API: HMAC credentials
+      - --static-auth-secret=${TURN_SECRET}
+      - --realm=secure-visio
+      - --min-port=49160                    # relay ports range
+      - --max-port=49200
+      - --no-tls                            # TURN over UDP/TCP; media is already DTLS-SRTP
+      - --no-dtls
+      - --no-cli
+      - --no-multicast-peers
+      - --no-tcp-relay                      # WebRTC only needs UDP relaying
+      - --log-file=stdout
+      # Security: anyone holding TURN credentials can ask coturn to send
+      # packets to an address of their choice. Without these rules that is
+      # an SSRF: a user could reach machines on our internal network.
+      - --denied-peer-ip=0.0.0.0-0.255.255.255
+      - --denied-peer-ip=10.0.0.0-10.255.255.255
+      - --denied-peer-ip=100.64.0.0-100.127.255.255
+      - --denied-peer-ip=127.0.0.0-127.255.255.255
+      - --denied-peer-ip=169.254.0.0-169.254.255.255
+      - --denied-peer-ip=172.16.0.0-172.31.255.255
+      - --denied-peer-ip=192.168.0.0-192.168.255.255
+      - --denied-peer-ip=::1
+      - --denied-peer-ip=fc00::-fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+      - --denied-peer-ip=fe80::-febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+      # Allow rules win over deny rules. A LAN demo needs exactly one private
+      # address allowed: this machine's own LAN IP, where relayed peers meet.
+      # Set TURN_ALLOWED_PEER_IP=<PUBLIC_IP> in .env for that. The default is
+      # 192.0.2.1, a reserved documentation address, so nothing is opened.
+      - --allowed-peer-ip=${TURN_ALLOWED_PEER_IP:-192.0.2.1}
+    restart: unless-stopped
+
+volumes:
+  users:

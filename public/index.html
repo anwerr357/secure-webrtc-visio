@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Secure Visio</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Secure Visio</h1>
+    <span id="whoami"></span>
+  </header>
+
+  <!-- Step 1: authenticate. The server returns a JWT used for the API and
+       the signaling WebSocket. -->
+  <section id="loginView" class="card">
+    <h2>Sign in</h2>
+    <form id="loginForm">
+      <label>Username <input id="username" autocomplete="username" required></label>
+      <label>Password <input id="password" type="password" autocomplete="current-password" required></label>
+      <div class="row">
+        <button type="submit" data-action="login">Log in</button>
+        <button type="submit" data-action="register" class="secondary">Create account</button>
+      </div>
+    </form>
+    <p id="loginError" class="error"></p>
+  </section>
+
+  <!-- Step 2: choose a room. -->
+  <section id="lobbyView" class="card" hidden>
+    <h2>Join a room</h2>
+    <form id="joinForm" class="row">
+      <input id="roomName" value="demo" maxlength="32" required>
+      <button type="submit">Join</button>
+    </form>
+    <label class="check"><input id="relayOnly" type="checkbox"> Force TURN relay (test NAT traversal)</label>
+    <p id="lobbyError" class="error"></p>
+  </section>
+
+  <!-- Step 3: the call. -->
+  <section id="callView" hidden>
+    <div class="call-layout">
+      <div id="grid" class="grid"></div>
+      <aside class="chat">
+        <h3>Chat <small>(peer to peer, DataChannel)</small></h3>
+        <ul id="chatLog"></ul>
+        <form id="chatForm" class="row">
+          <input id="chatInput" maxlength="500" autocomplete="off" placeholder="Message">
+          <button type="submit">Send</button>
+        </form>
+      </aside>
+    </div>
+    <div class="controls">
+      <span id="roomLabel"></span>
+      <button id="micBtn">Mute mic</button>
+      <button id="camBtn">Camera off</button>
+      <button id="screenBtn">Share screen</button>
+      <button id="hangupBtn" class="danger">Hang up</button>
+    </div>
+  </section>
+
+  <template id="tileTemplate">
+    <div class="tile">
+      <video autoplay playsinline></video>
+      <div class="tile-label"><span class="name"></span> <span class="badge"></span></div>
+      <pre class="stats"></pre>
+    </div>
+  </template>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

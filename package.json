@@ -1,0 +1,22 @@
+{
+  "name": "secure-webrtc-visio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "certs": "scripts/gen-certs.sh",
+    "test": "node --test test/*.test.js",
+    "e2e": "node scripts/e2e.mjs",
+    "congestion": "node scripts/congestion-e2e.mjs"
+  },
+  "dependencies": {
+    "express": "^4.22.3",
+    "jsonwebtoken": "^9.0.3",
+    "ws": "^8.22.2"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.65.0"
+  }
+}
